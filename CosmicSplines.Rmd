@@ -1,0 +1,1136 @@
+---
+title: "CosmicSplines"
+author: "Grimaldi Enrico, Nicola Grieco, Davide Vigneri, Giuseppe Di Poce"
+output: pdf_document
+date: "2023-05-12"
+---
+
+- Giuseppe Di Poce : 2072371
+- Enrico Grimaldi  : 1884443
+- Davide Vigneri   : 2058036
+- Nicola Grieco    : 2081607
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+
+
+```{r}
+## required libraries
+library(readr)
+library(caret)
+library(dplyr)
+library(ggplot2)
+library(glmnet)
+library(tidyverse)
+library(ggplot2)
+library(MASS)
+load("dati_hw1.RData")
+```
+
+
+# Question 1
+
+### Why this idea is yet another manifestation of our “be linear in transformed feature space” mantra. Technical difference with the “orthogonal series expansion” point of view.
+
+Linear models are widely used because they are rather "simple" and at the same time **highly interpretable**. In fact, the linearity of such models refers to the relationship between _parameters_ and _target_ variable: the target variable (y) can be defined as a linear combination of other variables called _predictors_. However, the simple _linear regression_ case can be relaxed by extending the linearity of the model by introducing new _predictors_ defined as a transformation (e.g., power elevation) of the old _predictors_.\
+What we therefore pursue is the selection of a model that can more accurately approximate the true function to be estimated: the complexity of the model increases __without improperly affecting the interpretability of the parameters__ and results obtained.\
+By summarizing with **regression splines** we map the input features in a different space that allows us to better capture the trend of the function underlying the observed data, using a model that is still linear.\
+In the case of the most basic _polynomial regression_ we intend to approximate the target function to its **truncated power expansion**: the result will be a linear combination of  basis functions that are polynomial functions of the predictor variable.\
+This set of monomial functions constitutes a particular design matrix called **Vandermonde matrix**: its columns represent a basis for the relative degree polynomial function (they are linearly independent).\
+We can now easily show that such expansion **does not constitute an orthogonal basis** since the inner product of any two of these basis functions is not necessarily zero. Consider the monomial basis functions:
+
+
+
+
+
+$$
+\begin{cases}
+\phi_1(x) = 1\\
+\phi_2(x) = x\\
+\phi_3(x) = x^2\\
+...\\
+\phi_d(x) = x^{(d-1)}
+\end{cases}
+$$
+Then we have that in general: 
+$$\langle \phi_i, \phi_j \rangle = \int_a^b x^{(i-1)} \cdot x^{(j-1)} \, dx = \Bigg[ \frac {x^{i+j-1}} {(i+j-1)}  \Bigg]_a^b \neq 0, \space \space \space \forall i \neq j$$
+
+The (natural) **spline regression** model can be thought of as a smoother version of the polynomial regression model. To the previous monomial basis of order $d$ we add a truncated power basis **for each knot** $\xi_i$ defined as follows:
+
+$$
+h_i(x, \xi_i) = 
+\begin{cases}
+(x- \xi_i)^d \space ,  \space \space \space x> \xi_i \\
+0 \space \space \space \space \space \space \space , \space otherwise
+\end{cases}
+$$
+
+We have previously shown that power expansion (for polynomial regression) unfortunately is not an orthogonal series expansion and consequently this new derived basis also does not possess the property of orthogonality.\
+
+To the actual absence of orthogonality in the **Vandermonde matrix** above we must moreover impute a difference between the monomial expansion coefficients and the new coefficients (the optimal parameters) in the spline basis representation:
+by including the new $h_i$ functions we find a better (smoother) fit that satisfy certain differentiability conditions, but this will involve in general different optimal values for the coefficients we already evaluated in the polynomial regression setup and the first $d+1$ coefficients in the spline regression setup (while in an orthogonal context like **Fourier expansion** we would only have to compute the coefficients for the new additional functions we decided to include in the approximation).\
+
+In summary, the studied expansion does not typically result in an orthonormal basis, but it is possible to construct an orthonormal basis using polynomial functions, such as the **Legendre polynomials**.
+
+
+# Question 2
+
+### Developing our own implementation of the truncated power basis
+
+The basis through which we want to represent the **Natural spline** is implemented as the combination of two parts:
+
+>- the power expansion $\beta_0 + \sum_{i=1}^{d} \beta_i x^i$
+>- the truncated power expansion $\sum_{i=1}^q max(0, x-k_i)^d$, where $k_i$ is the $i-th$ knot
+
+The coefficients of the basis $\{ \beta\} _{i=0}^{d+q+1}$ will be tuned fitting our spline model to the training set.
+
+
+### Plot the example truncated power basis for each combo of $d$ and $q$
+
+\includepdf[pages=-]{solution.pdf}
+
+```{r echo=FALSE}
+## set tuning parameters, q and d
+D <- c(1,3)
+Q <- c(3,10)
+# x values
+x_values <- seq(0, 1, length=1000)
+colo = viridis::viridis(4, .5)
+par(mfrow = c(2,2), mar=c(3,3,2,2))
+for(d in D){
+  for(q in Q){
+    # plot the simple power basis
+    plot(x_values, monom(x_values, d), type="l", col=colo[1],
+         main = paste("d =", d,";", "q =", q), lwd=3, ylim=c(-0.05, 1.1))
+    if(d != 1){
+      for(i in 1:(d-1)){
+        lines(x_values, monom(x_values, i), type="l", col=colo[1], lwd=3)
+      }
+    }
+    # find the knots given q
+    knots <- seq(0,1,length.out = q+2)
+    knots <- knots[-c(1,length(knots))]
+    # plot truncated power basis
+    for(k in knots){
+      lines(x_values, lwd=3,
+          unlist(lapply(x_values, trunc.power, k, d)), col=colo[2])
+    }
+    abline(v = knots, lwd=2, lty=3,
+           col = adjustcolor("grey",alpha.f=0.5))
+    abline(h =1, col=colo[1], lwd=3)
+    legend("left", c("Power Basis", "Trunc. Power Basis"),
+       col = c(colo[1], colo[2]), lwd = 4, bty = "n", cex = .8)
+  }
+}
+```
+
+### Use ChatGPT (or any other chat-bot capable of coding) to achieve the same task. Report the sequence of prompts you tried and the bot’s replies. How would you evaluate the quality of this tiny bot-based experience?
+
+![PDF File](hw1_chat_prompt.pdf){width=1000}
+
+
+
+Although the chat-box accomplished the task, we cannot neglect the fact that we
+have been very precise in describing the steps to perform. 
+Nevertheless, in the first attempt, ChatGPT misinterpreted the construnction 
+of the design matrix and provided us with an incorrect solution.
+As an AI language model, Chat has showed us that it does not have the ability to
+perform tasks on its own and it needs a carefull supervision. 
+Anyhow, starting from its code, we arrived at the same results as ours. 
+Of course, these claims have to been made considering the quality of the query
+that we wrote that was spot on and, in a certain sense, easy to interpret by a
+machine. 
+The quality of the response provided by Chat would have been very different
+(and we imagine 'suboptimal') if we had limited ourselves to report the full 
+content of the text of the homework.
+
+# Question 3
+
+### Use truncated power basis defined above to implement regression splines from scratch on the "wmap" data
+
+
+```{r, warning=FALSE, echo=FALSE, eval=FALSE}
+## import training and test set
+training <- read_csv("train.csv")
+test <-  read_csv("test.csv")
+
+```
+
+### Plot a few elements with $d \in \{1, 3\}$ and $q \in \{3, 10\}$ equispaced knots in the open interval (0, 1).
+
+Previously we plotted TPB for certain example values of $d$ and $q$. We then decide to report the plots of the splines corresponding to the bases above: these spline functions are in fact linear combinations of the bases themselves and the coefficients are appropriately computed by optimization algorithms implemented in the associated models (in this case 'lm'). 
+
+```{r echo=FALSE}
+## set tuning parameters, q and d
+D <- c(1,3)
+Q <- c(3,10)
+
+# sorted values of the feature vector (training set)
+vals <- sort(training$x , index.return=TRUE)
+# indexes of the sorted values
+idx <- vals$ix
+
+par(mfrow = c(2,2), mar=c(3,2,6,2))
+for(d in D){
+  for(q in Q){
+    # find the knots given q
+    knots <- seq(0,1,length.out = q+2)
+    knots <- knots[-c(1,length(knots))]
+    res <- predict(my_spline(training, d, q), build_dm(training$x, d, q))
+    # plot the predicted values over the training set 
+    plot(training$x, training$y, main = paste("d =", d,";", "q =", q), col="orchid",
+         ylab="y", xlab="", yaxt='n')
+    lines(vals$x, res[idx], col="darkviolet", lwd=3)
+    abline(v = knots, lwd=2, lty=3,
+           col = adjustcolor("grey",alpha.f=0.5))
+  }
+}
+mtext("Example fitted splines", side = 3, line = - 2, outer = TRUE, font = 2)
+```
+
+### Defining the structure of our model commprehensive of fit and predict functions in order to fastly implement tuning techniques and Grid search CV
+
+To define the structure we decide to use a list with named elements such as:
+
+>- type of the model;
+>- labeled grid of possible parameters;
+>- custom "fit" and "predict" functions;
+>- dynamic expansion of the design matrix given a new feature vector.
+
+
+### Setup the cross-validation we want to use and its hyperparameters with a specific method
+
+First method - with **lm model** - for parameters tuning, using a simple **K-Fold cross-validation**
+
+```{r eval=FALSE, echo=FALSE}
+## Setup the k-cross-validation parameters with 10 folds 
+train_control <- trainControl(method="cv", number=10)
+
+
+## setting the grid of parameters
+tune_grid <- expand.grid(d = c(1, 3),
+                         q = seq(1, 100, by = 1))
+
+# training the model using the caret package
+model <- train(y ~ x, 
+               data =training, 
+               method = my_method , 
+               trControl = train_control,
+               tuneGrid = tune_grid,
+               metric = "RMSE")
+
+```
+
+```{r echo=FALSE}
+plot_vanilla<- plot(model)
+plot_vanilla
+```
+
+
+Looking at the graph, the orange line, representing a 3-degree polynomial, reaches the global bottom in correspondence of q=20. This bottom point is never touched by the blue line, representing a 1-degree polynomial, that remains way above this point of interest.
+Therefore, for now, the optimal 'd' and 'q' are respectively 3 and 20. 
+
+
+
+
+Report the best selected model - **min. RMSE**
+```{r echo=FALSE}
+## best model
+model$results[as.numeric(row.names(model$bestTune)),]
+```
+
+Now, we restrict the grid of number of knots and contextually we change the type of cross validation, to wit we introduce the *Repeated cross validation* to get a more accurate result. We will perform 10-folds cross validation with 3 repetitions.
+
+
+
+```{r eval=FALSE, echo=FALSE}
+## Setup the repeated kfold-cross-validation parameters with 10 folds and 3 repetitions
+train_control2 <- trainControl(method="repeatedcv", number=10, repeats = 3)
+
+## setting the grid of parameters
+tune_grid2 <- expand.grid(d = c(1, 3),
+                         q = seq(1, 40, by = 1))
+
+# training the model using the caret package
+model2 <- train(y ~ x, 
+               data =training, 
+               method = my_method , 
+               trControl = train_control2,
+               tuneGrid = tune_grid2,
+               metric = "RMSE")
+
+```
+
+```{r echo=FALSE}
+plot_vanilla2<- plot(model2)
+plot_vanilla2
+```
+
+
+This graph allows us to have a more granular view of the optimal number of knots. Furthermore,  the repeated cross validation with 10 folds spits out that the number of knots that minimizes the RMSE is 19.
+The optimal polynomial degree is once again 3.
+
+
+
+Report the best selected model (min. RMSE)
+```{r echo=FALSE}
+## best model
+model2$results[as.numeric(row.names(model2$bestTune)),]
+```
+
+After these results we have gained enough confidence to claim that the best model is obtained with degree equals to 3. For this reason, from now on we restrict the grid-search only on the degree 3.
+Now, to gain more confidence on ‘q’, we increase the number of repetitions of the k-fold (10 folds 10 repetitions) cross validation and also we restrict the grid of q (from 10 to 30 knots).
+From the last analysis q is changed, the best model is again obtained with the degree equals to 3, so we restrict the Grid Search only on the degree 3. We also increase the number of repetitions of the k-fold cross validation and also we restrict the grid of q.
+
+
+
+
+```{r eval=FALSE}
+## Setup the repeteated k-fold-cross-validation parameters with 10 folds and 10 repeats
+train_control3 <- trainControl(method="repeatedcv", number=10, repeats = 10)
+
+## setting the grid of parameters
+tune_grid3<- expand.grid(d = c(3),
+                         q = seq(10, 30, by = 1))
+
+# training the model using the caret package
+model3 <- train(y ~ x, 
+               data =training, 
+               method = my_method , 
+               trControl = train_control3,
+               tuneGrid = tune_grid3,
+               metric = "RMSE")
+```
+
+```{r echo=FALSE}
+plot_vanilla3<- plot(model3)
+plot_vanilla3
+```
+
+
+From the last plot, nothing seems to be changed and so we get that the optimal number of knots is 19.
+
+
+
+
+
+```{r}
+## best model
+model3$results[as.numeric(row.names(model3$bestTune)),]
+```
+
+Until this moment we use only the linear model without penalization. We try to put in the game the **penalization** terms using __glmnet__ (introduce the **elastic net**).
+As a first run, we use a 10 fold cross validation as we did for the ‘lm’ model. 
+In addition to ‘d’ and ‘q’ we grid-search also ‘alpha’, the parameter that defines the type of regularization , and ‘lambda’, the parameter that controls the amount of regularization applied.
+
+
+
+
+
+```{r eval=FALSE, echo=FALSE}
+## Setup the  k-fold-cross-validation parameters with 10 folds 
+train_control4 <- trainControl(method="cv", number=10)
+
+tune_grid4 <- expand.grid(d = c(1,3),
+                         q = seq(1, 30, by = 1),
+                         alpha= seq(0,1, length = 10) ,   
+                         lambda = seq(0, 1, length = 10 ))
+
+# Train the model using the caret package
+model4 <- train(y ~ x, 
+                data = training, 
+                method = my_method2 , 
+                trControl = train_control4,
+                tuneGrid = tune_grid4,
+                metric = "RMSE")
+```
+
+
+```{r echo=FALSE}
+plot_vanilla4<- plot(model4)
+plot_vanilla4
+```
+
+
+This image can be intimidating but is the very first starting point toward our research of the optimal hyperparameters.
+For d=3, we have 10 different panels for 10 different values of lambda. Inside each panel, we may find how the alpha parameters affect the RMSE of the model.
+For d=1, we basically have 10 identical plots because the penalization does not have any effect when the polynomial is of first degree.
+
+
+Best model for this fourth analysis
+```{r echo=FALSE}
+## best model
+model4$results[as.numeric(row.names(model4$bestTune)),]
+```
+
+We see that, as expected, the optimal d is 3 and, as before, the optimal q is 20. We also find that the optimal alpha is 0, the Ridge penalty, and the optimal lambda is 0.11.
+We now proceed as before by restricting the Grid Search of our hyperparameters, focusing our attention on models with d=3.
+
+
+
+
+We can restrict the Grid search and obtain also a better plot to interpret:
+```{r eval=FALSE}
+## Setup the  k-fold-cross-validation parameters with 10 folds 
+train_control5 <- trainControl(method="cv", number=10)
+
+tune_grid5 <- expand.grid(d = c(3),
+                         q = seq(5, 25, by = 1),
+                         alpha= seq(0,0.4, length = 5) ,   
+                         lambda = seq(0, 0.5, length = 5 ))
+
+# Train the model using the caret package
+model5 <- train(y ~ x, 
+                data = training, 
+                method = my_method2 , 
+                trControl = train_control5,
+                tuneGrid = tune_grid5,
+                metric = "RMSE")
+
+```
+
+
+```{r}
+plot_vanilla5<- plot(model5)
+plot_vanilla5
+```
+
+
+The graphs show that the penalization does not seem to be a big game changer at least when lambda is different from 0. So, it seems that we need to apply a penalization of modest intensity with alpha whatever.
+
+
+
+
+```{r}
+model5$results[as.numeric(row.names(model5$bestTune)),]
+```
+
+Going more deeply into the results, we find that the optimal q is 21, alpha is 0 and lambda 0.2.
+
+Finally, we keep on restricting the grid and we do the repeated k-fold validation with 10 repetitions to obtain a more reliable result.
+
+
+
+```{r eval=FALSE}
+## Setup the  k-fold-cross-validation parameters with 10 folds 
+train_control6 <- trainControl(method="repeatedcv", number=10, repeats = 10)
+
+tune_grid6 <- expand.grid(d = c(3),
+                         q = seq(17, 25, by = 1),
+                         alpha= seq(0,0.4, length = 4) ,   
+                         lambda = seq(0, 0.5, length = 4 ))
+
+# Train the model using the caret package
+model6 <- train(y ~ x, 
+                data = training, 
+                method = my_method2 , 
+                trControl = train_control6,
+                tuneGrid = tune_grid6,
+                metric = "RMSE")
+
+```
+
+
+```{r}
+plot_vanilla6<- plot(model6)
+plot_vanilla6
+```
+
+
+The plot seems to confirm the suggestions of the previous one: lambda has to be small but greater than 0 and less than 0.5.
+In addition, now we have a more nitid information on alpha: it has to be less than 0.4.
+
+
+
+
+
+```{r}
+model6$results[as.numeric(row.names(model6$bestTune)),]
+```
+
+The table reports that the optimal choices are d=3, q=20, alpha=0, and lambda=0.16.
+After these last results, we decided to only search on the best lambda fixing the other hyperparameters: d = 3, q=20, and alpha = 0.
+
+
+
+
+```{r eval=FALSE}
+## Setup the  k-fold-cross-validation parameters with 10 folds 
+train_control7 <- trainControl(method="repeatedcv", number=10, repeats = 10)
+
+tune_grid7 <- expand.grid(d = c(3),
+                         q = c(20),
+                         alpha= c(0),   
+                         lambda = seq(0, 0.3, length = 20))
+
+# Train the model using the caret package
+model7 <- train(y ~ x, 
+                data = training, 
+                method = my_method2 , 
+                trControl = train_control7,
+                tuneGrid = tune_grid7,
+                metric = "RMSE")
+
+```
+
+
+```{r}
+plot_vanilla7<- plot(model7)
+plot_vanilla7
+```
+
+
+The graph suggest that the optimal lambda has to be inside the interval 0.11-0.2.
+
+
+```{r}
+model7$results[as.numeric(row.names(model7$bestTune)),]
+```
+
+The table gives us the detail that we are looking for: lambda is close to 0.157.
+
+
+Until now we didn't use any type of pre-processing because as first look our predictor data are in the range of [0,1] and there is no need to standardize it. But, after the feature engineering through the method of the truncated basis we can notice that the variables have very different scales and we know that standardization can bring them to a similar scale. This is important for models that are sensitive to the scale of the variables, such as, for example, the linear regression. Standardization ensures that no single variable dominates the model simply because of its larger scale. So we have implementing a method that goes to standardize the matrix of $X$ before estimating the model with the glmnet function, and we always see through cross validation what is the best model that we are then going to use for our predictions on the test set.
+
+
+```{r}
+## Setup the cross-validation parameters, 10 folds and 3 repetitions
+train_control8 <- trainControl(method= "cv", 10)
+```
+
+
+```{r eval = FALSE}
+tune_grid8 <- expand.grid(d = c(3),
+                         q = seq(1, 22, by = 2),
+                         alpha= seq(0,1, length = 5) ,       
+                         lambda = seq(0, 1, length = 5 ))
+
+# Train the model using the caret package
+model8 <- train(y ~ x, 
+                data = training, 
+                method = my_method3 , 
+                trControl = train_control8,
+                tuneGrid = tune_grid8,
+                metric = "RMSE")
+
+```
+
+
+```{r}
+plot(model8)
+```
+
+The graphs show that the type of penalization does not seem to be a big game changer. There are very little differences between in using a model closer to lasso or ridge. We can also see that rmse starts to rise a lot as knots increase and already from 13/15 knots it grows quite fast. Let's restrict the grid of knots on which we are searching the best solution in such a way to use a grid for q that increases one to one.
+
+
+```{r}
+model8$results[as.numeric(row.names(model8$bestTune)),]
+```
+Now we restrict the grid on q and we search for the values of alpha e lambda
+
+
+```{r}
+## Setup the cross-validation parameters, 10 folds 
+train_control9 <- trainControl(method= "cv", 10)
+```
+
+
+
+```{r eval = FALSE}
+tune_grid9 <- expand.grid(d = c(3),
+                         q = seq(1, 8, by = 1),
+                         alpha= seq(0,1, length = 5) ,       
+                         lambda = seq(0, 1, length = 5))
+
+# Train the model using the caret package
+model9 <- train(y ~ x, 
+                data = training, 
+                method = my_method3 , 
+                trControl = train_control9,
+                tuneGrid = tune_grid9,
+                metric = "RMSE")
+```
+
+
+```{r}
+plot(model9)
+```
+
+```{r}
+model9$results[as.numeric(row.names(model9$bestTune)),]
+```
+
+
+It is evident that the model with the lowest rmse is with 3 knots, so let us proceed by performing the repeated 10 fold cross validation to obtain a more stable result by repeating the whole procedure for 10 times.
+
+
+
+
+
+```{r}
+## Setup the cross-validation parameters, 10 folds 
+train_control10 <- trainControl(method= "repeatedcv", 10, 10)
+```
+
+
+
+```{r eval = FALSE}
+tune_grid10 <- expand.grid(d = c(3),
+                         q = seq(2,4 , by = 1),
+                         alpha= seq(0.6,1, length = 10) ,       
+                         lambda = seq(0.5, 1, length = 10))
+
+# Train the model using the caret package
+model10 <- train(y ~ x, 
+                data = training, 
+                method = my_method3 , 
+                trControl = train_control10,
+                tuneGrid = tune_grid10,
+                metric = "RMSE")
+
+```
+
+
+
+```{r}
+plot(model10)
+```
+
+
+
+```{r}
+model10$results[as.numeric(row.names(model10$bestTune)),]
+```
+Finally, we have confirmation that the model with the lowest rmse is the one generated using 3 degrees, 3 knots, alpha = 0.82222 and lambda = 0.5. The fact that the alpha is so high makes us realize that it is better to use an elastic net model that is closer to the L-1 solution and that we therefore prefer a model that brings the coefficients associated with the predictors completely to 0.
+
+
+
+```{r}
+## build the best model
+
+X_test <- build_dm(test$x, 3, 3)
+pre_test <- scale(X_test[,-1])     
+X_test <- cbind(X_test[,1],pre_test)
+
+
+X_training <- build_dm(training$x, 3, 3)
+pre_training <- scale(X_training[,-1])     
+X_training <- cbind(X_training[,1],pre_training)
+
+model_prova <- glmnet(X_training, training$y, alpha = 0.822222, lambda = 0.5)
+
+y_prova <- data.frame(predict(model_prova, X_test))
+
+y_pred <- data.frame(id = test$id, target = y_prova$s0) 
+
+write.csv(y_pred, "submission.csv", row.names = FALSE)
+
+```
+
+
+
+```{r}
+X_prova_training <- as.matrix(X_training)
+
+y_prova_training <- data.frame(predict(model_prova, X_prova_training))
+```
+
+
+
+```{r}
+plot(training$x,training$y,col='black',main=' WMAP Data',xlab='X',ylab='Y')
+lines(vals$x, y_prova_training$s0[vals$ix], col = "red", lwd = 3)
+```
+
+This is how our model fits on the data.
+
+
+### Bates-Hastie-Tibshirani Nested Cross-Validation implementation from from scratch
+
+```{r echo=TRUE}
+## we show in the html the code of the implementation since it was explicitly requested
+
+# create k folds given the training set
+makeFolds<-function(training,K){
+  folds<-createFolds(training$y,k = K, returnTrain = FALSE,list = T)
+  folder <- lapply(folds, function(idx) training[idx, ])
+  return(folder)
+}
+
+#Nested Cross-V (outer function)
+nested.cv2<-function(training,R,K,d,q, alpha, lambda){
+  es <- c()
+  a.list<- c()
+  b.list<- c()
+  #outer cv
+  for (r in 1:R){
+    folds <- makeFolds(training,K)
+    
+    for (k in 1:K){
+      # take all the folds except the k-th one
+      training.folds <- folds[-k]     ## list of dataframe
+      
+      holdout.fold <- folds[[k]]      
+      
+      # prediction error estimates with the inner-cv on the training set
+      e.in<- inner.cv2(training.folds, d, q,alpha,lambda)
+      
+      # evaluate coefficients on the training folds
+      training.folds <- bind_rows(folds[-k])      ## map list of dataframes in a unique dataframe 
+      
+      model <- my_spline3(training.folds, d, q, alpha, lambda)
+      coeffs <- model$beta
+      
+      # evaluate the loss (in terms of residuals) on the hold-out set
+      predictions <- predict(model, as.matrix(build_dm(holdout.fold$x,d,q)), type="response")
+      e.out <- (predictions - holdout.fold$y)^2  # error on the k-th hold-out set
+      
+      # populate our vectors for final aggregation of the results
+      temp1 <- (mean(e.in) - mean(e.out))^2
+      a.list <- c(a.list, temp1)
+      
+      temp2 <- var(e.out)/length(holdout.fold$x)
+      b.list <- c(b.list, temp2)
+      
+      es <- c(es, e.in)
+    }
+  }
+  rmse <- sqrt(mean(a.list) - mean(b.list))
+  err.ncv <- mean(es)
+  return(list("rmse"=rmse, "err.ncv"=err.ncv))#, "es"=es))
+}
+
+#inner loop
+inner.cv2 <- function(folds, d, q, alpha, lambda){
+  k <- length(folds) # number of folds from the previous partitioning
+  # init the losses for each fold set
+  e.in <- c()
+  for(i in 1:k){
+    # leave one set out for validation
+    training.set <- bind_rows(folds[-i])
+    holdout.set <- folds[[i]]
+ # evaluate the coefficients on the new training set
+    model <- my_spline3(training.set, d, q, alpha, lambda)
+    coeffs <- model$beta
+    
+    # evaluate the loss (in terms of residuals) on the new hold-out set
+    predictions <- predict(model, as.matrix(build_dm(holdout.set$x,d,q)), type="response")
+    true.vals <- holdout.set$y 
+    # define the loss between the predicted value and the true value as the squared difference
+    temp <- (predictions - true.vals)^2
+    e.in <- c(e.in, temp) # add the error on the i-th hold-out set
+  }
+  return(e.in)
+}
+```
+
+
+
+
+### What are the issues that we try to solve with this implementation of the Nested CV ?
+
+Basically, what the implementation of a nested cross-validation ($Ncv$) wants to do, as well as a vanilla cross-validation, is to evaluate the performance of a machine learning algorithm, and tuning $hyperparameters$ ($H$) is used to find the best set of $H$ for that specific algorithm we are dealing with. Without this type of approach, the same data is used to tune the model parameters and evaluate its performance, which can lead to a biased evaluation of the model.
+One basic difference between the two types of CV is that in the vanilla approach the model is trained on the training set and evaluated on the hold out set. This process is repeated several times, with different splits of the data, to obtain the best possible estimate of the model's performance.
+
+
+#### Let's define the following quantities:
+
+>- $Err_{XY}$: the error of the model that was fit on our actual training set 
+>- $Err$: the average error of the fitting algorithm run on same-sized data sets drawn from the underlying distribution P ... (average error over XY - training set)
+>- $Err_X := E[Err_{XY} | X]$: average error over Y
+
+#### Problems of classic CV:
+
+Cross-validation estimate provides little information about $Err_{XY}$ given a phenomenon called *weak correlation issue*. CV has lower MSE for estimating $Err$ than it does for $Err_{XY}$ in the special case of the linear model. The point is that CV should be viewed as an estimate of $Err$ rather than of $Err_{XY}$ and it is pretty useful to generalize to other unobserved data (in particular the K-Fold CV) but makes a poor estimate of the real prediction error.
+
+The main conclusion is that a *linearly invariant estimate* of the prediction error that has precision $1/\sqrt n$, such as $\hat Err^{(CV)}$, it has (asymptotically) lower estimation error when estimating $Err$ compared to $Err_{XY}$. Similarly, the correlation between a linearly invariant estimate and $Err_{XY}$ goes to zero. Thus, cross-validation is estimating the average error $Err$ more so than the specific error $ErrXY$. Similarly the [Bates et al. (2022)](https://arxiv.org/pdf/2104.00673.pdf) claims that the correlation between a linearly invariant estimate and $Err_{XY}$ goes to zero demonstrating that (assuming the homoskedastic Gaussian linear model holds and that we use squared-error
+loss) $\hat Err^{(CV)} \mathrel{\unicode{x2AEB}} Err_{XY}|X$
+
+#### What do we want to do with Nested CV?
+The *nested cross-validation* essentially represents an expansion of Repeated cross-validation and well generalizes the prediction error. In fact if one looks solely at the inner loop of the algorithm this simply consists of a K-Fold CV performed on a smaller number of folds than the classical implementation, but repeated R times in the outer loop.
+The real novelty of the reported NCV implementation is to account for the variability of the prediction error and the poor level of correlation between mean error and point error on the training set.
+
+Furthermore, the estimate of the variance of the classic CV point estimate assumes that the observed errors $e_1, . . . , e_n$ are independent. This is not true: the observed errors have less information than an independent sample since each point is used for both training and testing, which induces dependence among these terms.
+This additional intuition also suggests that something beyond the usual cross-validation will be required to give good estimates of the standard error of $\hat Err^{(CV)}$.
+
+With NCV we develop an estimator for the MSE of the cross-validation point estimate using the advantage offered by the *bootstrap simulation, then we use the estimated MSE to give **confidence intervals* for prediction error with approximately valid coverage.
+
+This estimator of the MSE empirically estimates the variance of $\hat Err^{(CV)}$ across many subsamples. Avoiding the faulty independence approximation leads to intervals with superior coverage (remember that our problem with the linear models is that confidence intervals for $Err_{XY}$ are larger than confidence intervals for $Err$)
+
+#### Finally, how do we create confidence interval for the prediction error of our model?
+We start by estimating the mean-squared error (MSE) of cross-validation: for a sample of size $n$ split into $K$ folds, the cross-validation MSE is
+
+$$MSE_{K,n} := E \bigg[ (\hat Err^{(CV)} - Err_{XY})^2 \bigg]$$
+We can further decompose this estimate (using a little trick) and deriving bias and variance of the estimate from error quantities from our outer and inner loops of the algorithm.
+
+We can view the MSE as a slightly conservative version of the variance of the cross-validation estimator from which we derive confidence intervals: 
+
+$$ \Big( \hat Err^{(NCV)} - \hat bias \space\pm \space z_{1- \alpha/2} \cdot\sqrt{\hat{MSE}} \Big)$$
+
+### How can we use the NCV in our problem?
+
+In our case we were able to fine tune the search for parameters and hyperparameters using Grid Searches based on Repeated/K_Fold CVs. Thus we were able to narrow down our search by at least excluding too high values of knots and spline degree less than third. Starting from this information we can now exploit our algorithm for the extremely computationally heavy Nested CV.
+
+What we derive are rather similar point estimate values of the prediction error for given models, and the search results for the best models do not differ so much from previous cases hoping for a plausible generalization.
+
+In this latter case, however, we have an additional piece of information: the confidence interval offered by the MSE estimates. 
+
+We then choose to proceed in the following way for the selection of the best model:
+
+1. we start from the most efficient model in terms of predictive error detected by Grid Search with the NCV
+2. we define the complexity of the model solely by the number of knots (since we assume that the degree of the best fit is 3)
+3. considering the confidence interval defined on the optimal predictive error from step 1, we move to the simplest model (given the same number of knots and parameters related to the regularization effect)
+4. select the latter model as the actual best model.
+
+Note that in the procedure above we did not consider the calculation of the bias for the definition of the confidence interval.
+
+
+
+```{r}
+#set parameters for the grid search 
+D=3
+Q=seq(3,21,1)
+A=round(seq(0,1,length=10),3)
+L=seq(0,1,length=5)
+
+# create data frame with all possible combinations
+df_grid <- expand.grid(Degree = D, knots = Q, alpha = A, lambda = L, stringsAsFactors = FALSE)
+# add columns of NA values
+df_grid$RMSE <- rep(0, nrow(df_grid))
+df_grid$Err_ncv <- rep(0, nrow(df_grid))
+
+for (i in 1:nrow(df_grid)) {
+#    for (q in Q){
+#      for (alpha in A){
+ #       for (lambda in L){
+          q = df_grid$knots[i]
+          alpha=df_grid$alpha[i]
+          lambda=df_grid$lambda[i]
+          
+          results <- nested.cv2(training,10,5,3,q,alpha,lambda)
+    
+          df_grid$RMSE[i]<- results$rmse
+          df_grid$Err_ncv[i]<- results$err.ncv
+      
+  #        }
+   #     }
+    #  }
+}
+
+#write.csv(df_grid, file = "grid_final.csv", row.names = FALSE)
+
+```
+
+
+
+```{r}
+#In order to be more clear let's drop all the rows where we have NaN value(negative) of the RMSE
+# subset the data frame to drop rows where x has NaN values
+df_grid <- na.omit(df_grid) #questo non è il massimo della vita ma è necessario!!!
+
+#find the minimum value of ERR_NCV, build confidence intervals as CI=bias^2+root(MSE)
+min=which.min(df_grid$Err_ncv) #177
+df_grid[min,]
+CI_upper<- (df_grid[min,]$Err_ncv)+(df_grid[min,5]) 
+CI_lower<- (df_grid[min,]$Err_ncv)-(df_grid[min,5]) 
+#questo è il nostro intervallo di confidenza di riferimento, il valore dei parametri che cerchiamo è tra 9324750(Err_ncv) e CI UPPER
+
+#Now let's build the confidence intervals
+for (i in 1:nrow(df_grid)){
+  df_grid$upper[i]<-df_grid$Err_ncv[i] +  qnorm(0.975)* df_grid$RMSE[i]
+  df_grid$lower[i]<-df_grid$Err_ncv[i] - qnorm(0.975) * df_grid$RMSE[i]
+}
+```
+
+
+```{r}
+
+#find the minimum Err_ncv of the best model
+min=which.min(df_grid$Err_ncv)
+df_grid[min,]
+
+#store alpha and lambda of the best model and filter the dataframe by the fixed pair of hyperparameters
+hyper=list('alpha'=df_grid[min,]$alpha,'lambda'=df_grid[min,]$lambda)
+
+#pipeline filter
+df = df_grid %>% 
+  filter(alpha==hyper$alpha,lambda==hyper$lambda)
+```
+
+
+```{r}
+library(ggplot2)
+minimum=which.min(df$Err_ncv)
+
+ggplot(df)+
+  #ylim(c(min(df$lower-1000000),max(df$upper)+1050000))+
+  ggtitle('Confidence Interval on Error of Nested Cross Validation')+
+  geom_errorbar(aes(x=knots,ymin=lower,ymax=upper),width=0.4,color='orange',alpha=0.9,size=1.3)+
+  geom_point(aes(x=knots,y=Err_ncv),size=2.5)+
+  geom_rect(aes(xmin=df[1,]$knots,xmax=df[nrow(df),]$knots,ymin=df[minimum,]$lower,ymax=df[minimum,]$upper),alpha=0.05,fill='lightblue',linetype='dashed')+
+  geom_line(aes(x = knots, y = Err_ncv),color='red',lwd=1.1,alpha=0.3)
+```
+As the Bates procedure suggests, we chose the best model by taking the $knot_i$  with the smallest Err_ncv as a reference point. Taking the error-derived confidence interval (RMSE) into account, we went on to choose the simplest model (in terms of number of knots) whose confidence interval falls entirely within the upper and lower bound of the reference error, i.e. the one that minimises Err_ncv.
+
+
+
+# Finally graphically and numerically compare the two fits on the training and also test data. Which one do you prefer? Explain.
+
+
+```{r,echo=FALSE}
+#Comparison among the best fit of nested and repeated cross validation 
+
+#First for the model coming from a repeated CV procedure
+best_model_rcv<- my_spline3(training,3,3,0.822222,0.5)
+
+## we selected the second model, the one with 4 knots
+df[2,]
+
+```
+
+```{r}
+
+best_model_nested<-my_spline3(training,3,4,0,0.5)  #the model with the closer CI 
+
+#predictions
+
+X_rcv <- build_dm(test$x, 3, 3)
+pre_X_rcv <- scale(X_rcv[,-1])  
+X_rcv <- cbind(X_rcv[,1],pre_X_rcv)
+
+preds_rcv <-predict(best_model_rcv, X_rcv) 
+
+X_nest <- build_dm(test$x, 3, 4)
+pre_X_nest <- scale(X_nest[,-1])  
+X_nest <- cbind(X_nest[,1],pre_X_nest)
+
+preds_nested <- predict(best_model_nested, X_nest)
+
+
+y_preds_nested=data.frame('id'=training$id[1:224],'target'= preds_nested) 
+y_preds_rcv=data.frame('id'=training$id[1:224],'target'=preds_rcv)
+
+colnames(y_preds_rcv)[2] <- 'target'
+colnames(y_preds_nested)[2] <- 'target'
+
+```
+
+
+```{r}
+y_preds_nested2 <- data.frame(preds_nested)
+y_preds_nested2 =data.frame('id'= test$id,'target'= y_preds_nested2$s0)
+write.csv(y_preds_nested2, "submission.csv", row.names = FALSE)
+```
+
+
+
+Numerically speaking, we can take into account the $Err_{ncv}$ as the error of the model and compare our two best fit based on it.
+
+```{r,warning=FALSE}
+ncv_row= df_grid %>% 
+  filter(alpha==0.889,lambda==0.5,knots==3)
+
+rcv_row=df_grid %>% 
+  filter(alpha==0,lambda==0.5,knots==4) #variable selection among variable affichè i coefficenti siano portati a zero 
+
+Error_gap=ncv_row$Err_ncv-rcv_row$Err_ncv
+Error_gap
+```
+
+Based on the conclusions drawn during our analysis, we came up with our best models whose hyperparameters ($H$) result from two different procedures such as repeated-cv and nested-cv, which have been discussed at length above. 
+Note that when varying R and K (number of folds) we will have slightly different results, but for the sake of simplicity our analysis has focused exclusively on the regularization parameters (\alpha and \lambda) and the number of knots q, setting the number of folds equal to 10 (that tend to select models less complex) and R=10 due to the fact that for smaller numbers of loops the Bates algorithm returns negative values. 
+This is simply due to the fact that in 
+
+$$MSE ← mean(a_{list}) − mean(b_{list})$$
+
+the right quantity ($var(e^{(out)})/|I_k|$) may be greater than the left term.
+
+In simplicity, our goal is to select by various validation methods the best values of the set of $H$ such that our model is as generalisable as possible and, therefore, the least complex. In the specific case of the implementation of splines, the complexity depends on the number of knots and the combination of the parameters \alpha and \lambda:
+in our case we have decided to use a mixture method such as $elastic net$ where \alpha corresponds to the value associated with the Lasso (L1 penalization, that takes the coefficient to zero, choosing simpler models) and \beta to the Ridge (L2). The following scatterplot depicts the behavior of the predictions based on the two different splines models.
+
+```{r,echo=FALSE}
+
+#Show graphically
+par(mfrow=c(1,2))
+
+plot(training$x,training$y,col='orchid',main='Bates Nested_CV predictions shape',xlab='Power Spectrum (Multiple)',ylab='Strenght of the temperature flactuation (Power)')
+points(test$x,y_preds_nested$target)
+
+plot(training$x,training$y,col='orchid',main='Repetead_CV predictions shape',xlab='Power Spectrum (Multiple)',ylab='')
+points(test$x,y_preds_rcv$target)
+```
+
+
+
+
+
+Thus taking into consideration the two terms ($\alpha$ and $q$) that determine complexity our choice of the best and most generalisable model will fall on the one generated by repeated cross validation with $\alpha$ equal to 0.899 and q=3. Specifically, this choice is due to the fact of trying to avoid $overfitting$ on the test set as much as possible.
+
+Due to the $Heteroschedatics$ of our train data that we will discuss in a moment, our predictions may be affected by the big noise of the training data in the final part of the shape.The following plot explain at what data point we are referring.
+
+```{r,echo=FALSE}
+library(ggplot2)
+
+ggplot(data = training, aes(x = x, y = y)) + 
+  geom_point(aes(color = x > 0.8), size = 2) + 
+  scale_color_manual(values = c("black", "red"), 
+                     labels = c("Easier points to handle", "Difficult points to handle with hight noise")) +
+  guides(color = guide_legend(override.aes = list(size = 4))) +
+  theme(legend.position = "bottom") +
+  labs(title = "Scatterplot of Train Data", x = 'Power Spectrum (Multiple)',y='Strenght of the temperature flactuation (Power)')
+```
+
+
+
+To solve this issue we have tried to by removing outliers or by collapsing points with very large y values to their exponential mean. 
+
+By the way, until now, we do a pre-processing only on the predictors variables. But we can take a look to our data and we can notice something relevant:
+
+The shape of the data resembles a funnel on the right side, it suggests a relationship between the predictor variable $x$ and the response variable $y$ known as heteroscedasticity. Specifically, it indicates that the variability of y tends to increase as the values of x increase. In other words the variability of $y$ is not constant across the different levels or values of the predictor variable $x$. Heteroscedasticity can pose challenges in regression analysis because it violates the assumption of homoscedasticity, which assumes that the variability of the errors (residuals) is constant across all levels of the predictor variable. When heteroscedasticity is present, the standard errors of the regression coefficients may be biased, leading to incorrect inference and potentially misleading results. To cope with heteroscedasticity, we can apply the Box-Cox transformation to the response variable, $y$. This transformation can be useful from different perspectives:
+
+- **Homoscedasticity**: By applying a suitable Box-Cox transformation, the transformation can
+stabilize the variance, making it more constant across the range of the predictor variable. This can result in improved estimates of standard errors, as the assumption of homoscedasticity is better satisfied.
+
+- **Normality**: This transformation can also address non-normality in the data. Non-normality can affect the validity of statistical inference, including the estimation of standard errors. By transforming the data to achieve a more symmetric and normally distributed outcome, the assumptions of linear regression, such as normality of residuals, are better met. This can lead again to more accurate estimates of standard errors.
+
+- **Outliers and influential observations**: This transformation can also help mitigate the impact of outliers and influential observations, which can distort the estimation of standard errors. By transforming the data, extreme observations may be pulled closer to the bulk of the data, reducing their influence on the estimates. This can result in more robust standard error estimates.
+
+
+So we proceed applying the Box Cox trasformation:
+
+## Box Cox transformation
+
+$$ y(\lambda) = \begin{cases}
+    \dfrac{{(y+C)^\lambda - 1}}{\lambda} & \text{if } \lambda \neq 0 \\
+    \ln(y+C) & \text{if } \lambda = 0
+\end{cases}$$
+
+
+- The data is adjusted for negative or zero values by adding a constant value C to shift the data. The constant C is determined by taking the absolute value of the minimum value in the data (y) and adding 1. $C = min(y) + 1$
+
+- The $\lambda$ value corresponding to the highest likelihood is identified using the "boxcox" function in R of the library MASS. This $\lambda$ value represents the optimal $\lambda$ for the Box-Cox transformation.
+
+
+```{r}
+## implementation of Box Cox transformation
+box_cox <- function(y){
+  # Adjust for negative or zero values
+  min_y <- min(y)
+  C <- abs(min_y) + 1  # Constant to shift the data
+
+  # Apply Box-Cox transformation to shifted data
+  transformed_y <- boxcox((y + C) ~ 1, plotit = FALSE)
+  #The resulting transformed_y object contains the lambda (x-axis) and the corresponding likelihood     #values (y-axis) for different lambda values.
+
+  
+  # Extract the optimal lambda value
+  lambda_box <- transformed_y$x[which.max(transformed_y$y)]
+  
+  # Apply the transformation to original data
+  if (lambda_box == 0) {
+    y_transformed <- log(y + C)
+  } else {
+    y_transformed <- ((y + C)^lambda_box - 1)/lambda_box
+  }
+  return(list(y =y_transformed, lambda = lambda_box))
+}
+
+```
+
+
+Let's see the differences between the data before and after the transformation
+
+
+```{r }
+par(mfrow = c(1,2))
+## plot WMAP data after Box Cox transformation
+plot(training$x,training$y,col='purple',main=' WMAP Data before Box Cox',xlab='X',ylab='Y')
+## plot WMAP data after Box Cox transformation
+plot(training$x,box_cox(training$y)$y, ylim = c(-10000, 27000), main = "Wmap data after Box Cox", col = "purple", xlab='X',ylab='Y')
+```
+
+We can see that the box cox transformation has succeeded in limiting the variability in the data and in this way even the presence of outliers is handled, in what way controlled and will not affect the linear model negatively.
+
+
+```{r}
+training4 <- data.frame(id = training$id, x = training$x, y = box_cox(training$y)$y)
+```
+
+
+```{r}
+## Setup the repeated 10 fold cross-validation 
+train_control12 <- trainControl(method= "repeatedcv", 10, 5)
+```
+
+
+
+```{r eval = FALSE}
+tune_grid12 <- expand.grid(d = c(1,3),
+                         q = seq(3,21 , by = 1),
+                         alpha= seq(0,1, length = 5) ,       
+                         lambda = seq(0, 1, length = 5))
+
+# Train the model using the caret package
+model12 <- train(y ~ x, 
+                data = training4, 
+                method = my_method3 , 
+                trControl = train_control12,
+                tuneGrid = tune_grid12,
+                metric = "RMSE")
+
+```
+
+```{r}
+plot(model12)
+```
+
+
+```{r}
+model12$results[as.numeric(row.names(model12$bestTune)),]
+```
+
+Constructing the model after using the Box Cox on the $y$ and standardizing the features after embedding we get as a model that the minor rmse the one with degree = 1,  knots = 9, alpha and lambda = 0, so no penalty.  So we proceed with the estimation of this model and we have to remember to perform the inverse box cox function in order to return to the original $y$ scale.
+
+
+```{r}
+## save the lambda value to do the inverse in the final evaluation
+lambda_box <- box_cox(training$y)$lambda
+## save the Constant value to do the inverse in the final evaluation
+C <- abs(min(training$y)) + 1
+
+X_prova2 <- as.matrix(build_dm(test$x, 1,9))
+
+## build the best model
+model_prova2 <- glmnet(build_dm(training$x, 1,9), box_cox(training$y)$y, alpha = 0, lambda = 0)
+
+## do the predictions
+y_prova2 <- data.frame(predict(model_prova2, X_prova2))
+
+## return in the original scale of y
+y_start2 <- (lambda_box * y_prova2$s0 +1)^(1/lambda_box) - C
+
+y_pred2 <- data.frame(id = test$id, target = y_start2) 
+write.csv(y_pred, "submission.csv", row.names = FALSE)
+
+
+## to do the plot of the fitting on the model on the training data
+X_prova_training2 <- as.matrix(build_dm(training$x, 1,9))
+y_prova_training2 <- data.frame(predict(model_prova2, X_prova_training2))
+
+y_start_training2 <- (lambda_box * y_prova_training2$s0 +1)^(1/lambda_box) - C
+```
+
+```{r}
+plot(training$x,training$y,col='black',main=' WMAP Data',xlab='X',ylab='Y')
+lines(vals$x, y_start_training2[vals$ix], col = "red", lwd = 3)
+```
+
+
+This is how the model fits on the data.
+
+
+It should be noted that this transformation is really useful in case we want to fit obviously non-linear data like WMAP data with a linear model. however, it is clear that this is not the objective of this assignment, which refers to the development of models with splines, which have the purpose of reducing a non-linear regression model to a linear model.
+Actually the $Box Cox$ could also be seen as an alternative to splines, but this in any case is not strictly related to this assignment.
