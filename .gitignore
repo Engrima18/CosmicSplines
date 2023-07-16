@@ -48,5 +48,8 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
-# Other files
-.Rproj
+# final submission and input CSV files
+*.csv
+
+# .Rproj files
+*.Rproj
