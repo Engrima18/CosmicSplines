@@ -39,9 +39,9 @@ spline f(·) we start from a bunch of points, say $q$, that we call knots $ξ_1 
 Given a set of points $ξ_1 < ξ_2 < · · · < ξ_q$, there is a quick-and-dirty way to describe/generate the whole set of _d-th_-order spline functions over those $q$ knots: start from **truncated
 power functions** $G_{d,q} = \{g_1(x), . . . g_{d+1}(x), g_{(d+1)+1}(x), . . . , g_{(d+1)+q}(x)\}$, defined as:
 
-$$$
+$$
 g_1(x) = 1, g_2(x) = x, . . . , g_{d+1}(x) = x^d , \text{and} \{g_{(d+1)+j}(x) = (x − ξ_j)_+^d\}_{j=1}^q
-$$$
+$$
 
 where $(x)_+ = max\{0, x\}$.
 Then, if f(·) is a d
