@@ -20,7 +20,7 @@ of different constituents of the universe (such as baryons and dark matter) corr
  the temperature map can be reduced to the following scatterplot of
 power versus frequency:
 
-<img width="514" alt="freqs" src="https://github.com/Engrima18/CosmicSplines/assets/93355495/e7dd3e4d-66d3-4abd-92a5-d2c160a20836">
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/e7dd3e4d-66d3-4abd-92a5-d2c160a20836" align="center">
 
 
 
