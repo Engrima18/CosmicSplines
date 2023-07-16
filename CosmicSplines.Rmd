@@ -28,6 +28,8 @@ library(tidyverse)
 library(ggplot2)
 library(MASS)
 load("dati_hw1.RData")
+source("Regression_spline.R")
+source("NestedCV.R")
 ```
 
 
