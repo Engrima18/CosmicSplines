@@ -29,4 +29,11 @@ In a nutshell:
 >- The goal is to predict the angular power spectrum at 224 additional frequencies.
 >- RMSE is the adopted metric.
 
- 
+## Splines implementation
+Any d__th__-order spline $f(·)$ is a piecewise polynomial function of degree d that is continuous and has
+continuous derivatives of orders ${1, . . . , d − 1}$ at the so called knot points. To build a generic dth-order
+spline f(·) we start from a bunch of points, say $q$, that we call knots $\epsilon_1 < · · · < \epsilon_q$, and we then ask the following:
+1. $f(·)$ is some polynomial of degree d on each of the intervals: $(−∞, ξ1], [ξ1, ξ2], [ξ2, ξ3], . . . , [ξq, +∞)$;
+2. its jth derivative f_j(·) is continuous at {ξ1, . . . , ξq} for each j ∈ {0, 1, . . . , d − 1}.
+
+
