@@ -6,7 +6,7 @@ Implementation of Regression Splines from scratch to predict  e cosmic microwave
 We are talking about a snapshot of our universe in its infancy,
 something like 379,000 years after the Big Bang, nothing compared to the estimated age of our universe.
 
-<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/e10207f8-8b2e-4d7b-bab6-3407237e53e0" align="center">
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/e10207f8-8b2e-4d7b-bab6-3407237e53e0" align="right">
 
 The map above was taken by the Wilkinson Microwave Anisotropy Probe (WMAP) and shows differences across the sky in
 the temperature of the cosmic microwave background (CMB), the radiant heat remaining from the Big Bang. The average
