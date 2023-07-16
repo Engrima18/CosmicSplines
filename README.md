@@ -8,7 +8,7 @@ something like 379,000 years after the Big Bang, nothing compared to the estimat
 
 <img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/e10207f8-8b2e-4d7b-bab6-3407237e53e0" align="right">
 
-The map above was taken by the Wilkinson Microwave Anisotropy Probe (WMAP) and shows differences across the sky in
+The map next was taken by the Wilkinson Microwave Anisotropy Probe (WMAP) and shows differences across the sky in
 the temperature of the cosmic microwave background (CMB), the radiant heat remaining from the Big Bang. The average
 temperature is 2.73 degrees above absolute zero but the temperature is not constant across the sky. The fluctuations in the
 temperature map provide information about the early universe. Indeed, as the universe expanded, there was a tug of war
