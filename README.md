@@ -22,6 +22,11 @@ power versus frequency:
 
 <img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/e7dd3e4d-66d3-4abd-92a5-d2c160a20836" width=70% height=70% align="center">
 
+## Goal
+In a nutshell:
 
+>- The dataset in training consists of 675 CMB angular power spectrum observations estimated from the latest WMAP data release.
+>- The goal is to predict the angular power spectrum at 224 additional frequencies.
+>- RMSE is the adopted metric.
 
  
