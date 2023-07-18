@@ -36,19 +36,14 @@ spline f(·) we start from a bunch of points, say $q$, that we call knots $ξ_1 
 1. $f(·)$ is some polynomial of degree $d$ on each of the intervals: $(−∞, ξ_1], [ξ_1, ξ_2], [ξ_2, ξ_3], . . . , [ξ_q, +∞)$;
 2. its _j-th_ derivative $f_j(·)$ is continuous at ${ξ_1, . . . , ξ_q}$ for each $j \in {0, 1, . . . , d − 1}$.
 
-Given a set of points $ξ_1 < ξ_2 < · · · < ξ_q$, there is a quick-and-dirty way to describe/generate the whole set of _d-th_-order spline functions over those $q$ knots: start from **truncated
-power functions** $G_{d,q} = \{g_1(x), . . . g_{d+1}(x), g_{(d+1)+1}(x), . . . , g_{(d+1)+q}(x)\}$, defined as: $g_1(x) = 1, g_2(x) = x, . . . , g_{d+1}(x) = x^d$, $g_{(d+1)+j}(x) = (x − ξ_j)_{+}^d$ for $j=1$ to $q$
+Given a set of points $ξ_1 < ξ_2 < · · · < ξ_q$, there is a quick-and-dirty way to describe/generate the whole set of _d-th_-order spline functions over those $q$ knots: 
+
+* start from **truncated
+power functions** $G_{d,q}$ = {$g_1(x), . . . g_{d+1}(x), g_{(d+1)+1}(x), . . . , g_{(d+1)+q}(x)$}, defined as: {$g_1(x) = 1, g_2(x) = x, . . . , g_{d+1}(x) = x^d$}, {$g_{(d+1)+j}(x) = (x − ξ_j)_{+}^d$} for $j=1$ to $q$
 
 where $(x)_+ = max \{ 0, x \} $.
-Then, if f(·) is a d
-th-order spline with knots {ξ1, . . . , ξq} you can show it can be obtained as a linear combinations over Gd,q
-f(x) =
-(d+1)+
-X q
-j=1
-βj · gj (x), for some set of coefficients β =
-
-β1, . . . , βd+1, β(d+1)+1, . . . β(d+1)+q
+* Then, if $f(·)$ is a _d-th_-order spline with knots ${ξ1, . . . , ξq}$ you can show it can be obtained as a linear combinations over $Gd,q
+f(x) = (d+1)+ X q j=1   βj · gj (x), for some set of coefficients β = β1, . . . , βd+1, β(d+1)+1, . . . β(d+1)+q
 T
 .
 
