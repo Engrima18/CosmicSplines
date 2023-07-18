@@ -44,5 +44,10 @@ power functions** $G_{d,q}$ = { $g_1(x), . . . g_{d+1}(x), g_{(d+1)+1}(x), . . .
 
 > $f(x) = \sum_{j=1}^{(d+1)+q} \beta_j \times g_j(x)$ , for some set of coefficients $β = [\beta_1, . . . , \beta_{d+1}, \beta_{(d+1)+1} , . . . \beta_{(d+1)+q}]^T$
 
-.
+## Team ("🍫I Cioccolatosi🍫"): 
+- Enrico Grimaldi ([Linkedin](https://www.linkedin.com/in/enrico-grimaldi18/) - [Github](https://github.com/Engrima18))
+- Giuseppe Di Poce ([Linkedin](https://www.linkedin.com/in/giuseppe-di-poce-82a4ba14a/) - [Github](https://github.com/))
+- Davide Vigneri ([Linkedin](https://www.linkedin.com/in/davide-vigneri-59a56021a/) - [Github](https://github.com/giuseppedipoce))
+- Nicola Grieco ([Linkedin](https://www.linkedin.com/in/nicola-grieco-36a993233/) - [Github](https://github.com/nicolagrieco00))
+
 
