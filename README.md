@@ -86,4 +86,8 @@ Then we fit another time the splines and obtain our final results!
 - Davide Vigneri ([Linkedin](https://www.linkedin.com/in/davide-vigneri-59a56021a/) - [Github](https://github.com/giuseppedipoce))
 - Nicola Grieco ([Linkedin](https://www.linkedin.com/in/nicola-grieco-36a993233/) - [Github](https://github.com/nicolagrieco00))
 
+## Used technologies
+ 
+![RStudio](https://img.shields.io/badge/RStudio-4285F4?style=for-the-badge&logo=rstudio&logoColor=white)
+![R](https://img.shields.io/badge/r-%23276DC3.svg?style=for-the-badge&logo=r&logoColor=white)
 
