@@ -42,7 +42,43 @@ Given a set of points $ξ_1 < ξ_2 < · · · < ξ_q$, there is a quick-and-dirt
 power functions** $G_{d,q}$ = { $g_1(x), . . . g_{d+1}(x), g_{(d+1)+1}(x), . . . , g_{(d+1)+q}(x)$ }, defined as: { $g_1(x) = 1, g_2(x) = x, . . . , g_{d+1}(x) = x^d$  }, { $ g_{(d+1)+j}(x) = (x − ξ_j)_{+}^d $ } for $ j=1 $ to $ q $, where $(x)_{+}$ = max{ $0, x$ }.
 * Then, if $f(·)$ is a _d-th_-order spline with knots ${ξ1, . . . , ξq}$ you can show it can be obtained as a linear combinations over $G_{d,q}$:
 
-** $f(x) = \sum_{j=1}^{(d+1)+q}  \beta_j g_j(x)$ , for some set of coefficients $\beta = \beta_1, ... , \beta_{d+1}, \beta_{(d+1)+1} , ..., \beta_{(d+1)+q} ]^T$
+** $f(x) = \sum_{j=1}^{(d+1)+q}  \beta_j g_j(x)$ , for some set of coefficients $\beta = [\beta_1, ... , \beta_{d+1}, \beta_{(d+1)+1} , ..., \beta_{(d+1)+q} ]^T$
+
+## Nested Cross Validation
+
+Considering the knots as positioned on q-equispaced locations we proceed with different Cross Validation techniques to tune the hyperparameters (knots, maximum degree of the truncated power functions etc...) such as: **Grid Search CV**, **Vanilla CV** and the **Nested CV** from the [Bates et al.](https://arxiv.org/pdf/2104.00673.pdf) article.\\
+We used **Repeated CV** to fnd the best degree and number of knots
+
+Degree          |  Knots
+:-------------------------:|:-------------------------:
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/3956ec48-d611-40b1-ba85-c8d88dce0ff9"> | <img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/1aeb886d-b5d2-4d78-a1df-dc47e7f52218">
+
+
+Then we implemented an **Elastic Net regularization** and tuned the related hyperparameters always with the CV.
+
+Shrinkage type          |  Shrinkage weight
+:-------------------------:|:-------------------------:
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/11c3aa4e-7be1-4982-9e91-4fa9d39599eb"> | <img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/69e03137-cdd9-46f7-825b-45d0ce4edeea">
+
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/9b06869a-6ab2-4fa6-acc1-a52f8fb3f15a" align="center">
+
+## Fit the splines
+
+Finally we can fit the obtained splines to our WMAP data.
+
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/213730f2-fd6f-4b4b-80da-748a5f3af970" width=100% height=70%>
+
+## Final results
+Due to the _Heteroschedatics_ of our train data our predictions may be affected by the big noise of the training data in the final part of the shape. We use the Box-Cox transformation.
+
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/24926e6f-9985-46c8-b852-65b69930a77a" width=100% height=60%>
+
+Then we fit another time the splines and obtain our final results!
+
+<img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/6bef1fcc-717c-43bc-b61b-d2a9b6b7ddea">
+
+
+
 
 ## Team ("🍫I Cioccolatosi🍫"): 
 - Enrico Grimaldi ([Linkedin](https://www.linkedin.com/in/enrico-grimaldi18/) - [Github](https://github.com/Engrima18))
