@@ -69,7 +69,7 @@ Finally we can fit the obtained splines to our WMAP data.
 <img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/213730f2-fd6f-4b4b-80da-748a5f3af970" width=100% height=70%>
 
 ## Final results
-Due to the _Heteroschedatics_ of our train data our predictions may be affected by the big noise of the training data in the final part of the shape. We use the Box-Cox transformation.
+Due to the _Heteroschedaticity_ of our train data our predictions may be affected by the big noise of the training data in the final part of the shape. We use the Box-Cox transformation.
 
 <img src="https://github.com/Engrima18/CosmicSplines/assets/93355495/24926e6f-9985-46c8-b852-65b69930a77a" width=100% height=60%>
 
