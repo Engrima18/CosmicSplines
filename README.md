@@ -29,25 +29,24 @@ In a nutshell:
 >- The goal is to predict the angular power spectrum at 224 additional frequencies.
 >- RMSE is the adopted metric.
 
-## Splines implementation
-Any _d-th_-order spline $f(·)$ is a piecewise polynomial function of degree d that is continuous and has
-continuous derivatives of orders ${1, . . . , d − 1}$ at the so called **knot points**. To build a generic dth-order
-spline f(·) we start from a bunch of points, say $q$, that we call knots $ξ_1 < · · · < ξ_q$, and we then ask the following:
-1. $f(·)$ is some polynomial of degree $d$ on each of the intervals: $(−∞, ξ_1], [ξ_1, ξ_2], [ξ_2, ξ_3], . . . , [ξ_q, +∞)$;
-2. its _j-th_ derivative $f_j(·)$ is continuous at ${ξ_1, . . . , ξ_q}$ for each $j \in {0, 1, . . . , d − 1}$.
+## Splines Implementation
 
-Given a set of points $ξ_1 < ξ_2 < · · · < ξ_q$, there is a quick-and-dirty way to describe/generate the whole set of _d-th_-order spline functions over those $q$ knots: 
+Any _d-th_-order spline \( f(\cdot) \) is a piecewise polynomial function of degree \( d \) that is continuous and has continuous derivatives of orders \( 1, \ldots, d - 1 \) at the so-called **knot points**. To build a generic dth-order spline \( f(\cdot) \) we start from a bunch of points, say \( q \), that we call knots \( \xi_1 < \cdots < \xi_q \), and we then ask the following:
+1. \( f(\cdot) \) is some polynomial of degree \( d \) on each of the intervals: \( (-\infty, \xi_1], [\xi_1, \xi_2], [\xi_2, \xi_3], \ldots, [\xi_q, +\infty) \);
+2. its _j-th_ derivative \( f^{(j)}(\cdot) \) is continuous at \( \xi_1, \ldots, \xi_q \) for each \( j \in \{0, 1, \ldots, d - 1\} \).
 
-* start from **truncated
-power functions** $G_{d,q}$ = { $g_1(x), . . . g_{d+1}(x), g_{(d+1)+1}(x), . . . , g_{(d+1)+q}(x)$ }, defined as: { $g_1(x) = 1, g_2(x) = x, . . . , g_{d+1}(x) = x^d$  }, { $ g_{(d+1)+j}(x) = (x − ξ_j)_{+}^d $ } for $ j=1 $ to $ q $, where $(x)_{+}$ = max{ $0, x$ }.
-* Then, if $f(·)$ is a _d-th_-order spline with knots ${ξ1, . . . , ξq}$ you can show it can be obtained as a linear combinations over $G_{d,q}$:
+Given a set of points \( \xi_1 < \xi_2 < \cdots < \xi_q \), there is a quick-and-dirty way to describe/generate the whole set of _d-th_-order spline functions over those \( q \) knots:
 
-** $f(x) = \sum_{j=1}^{(d+1)+q}  \beta_j g_j(x)$ , for some set of coefficients $\beta = [\beta_1, ... , \beta_{d+1}, \beta_{(d+1)+1} , ..., \beta_{(d+1)+q} ]^T$
+* Start from **truncated power functions** \( G_{d,q} = \{ g_1(x), \ldots, g_{d+1}(x), g_{(d+1)+1}(x), \ldots, g_{(d+1)+q}(x) \} \), defined as: \( \{ g_1(x) = 1, g_2(x) = x, \ldots, g_{d+1}(x) = x^d \} \), \( \{ g_{(d+1)+j}(x) = (x - \xi_j)_{+}^d \} \) for \( j = 1 \) to \( q \), where \( (x)_{+} = \max(0, x) \).
+* Then, if \( f(\cdot) \) is a _d-th_-order spline with knots \( \{\xi_1, \ldots, \xi_q\} \), you can show it can be obtained as a linear combination over \( G_{d,q} \):
+
+    **\( f(x) = \sum_{j=1}^{(d+1)+q} \beta_j g_j(x) \),** for some set of coefficients \( \beta = [\beta_1, \ldots, \beta_{d+1}, \beta_{(d+1)+1}, \ldots, \beta_{(d+1)+q}]^T \)
 
 ## Nested Cross Validation
 
-Considering the knots as positioned on q-equispaced locations we proceed with different Cross Validation techniques to tune the hyperparameters (knots, maximum degree of the truncated power functions etc...) such as: **Grid Search CV**, **Vanilla CV** and the **Nested CV** from the [Bates et al.](https://arxiv.org/pdf/2104.00673.pdf) article.\\
-We used **Repeated CV** to fnd the best degree and number of knots
+Considering the knots as positioned on q-equispaced locations, we proceed with different Cross Validation techniques to tune the hyperparameters (knots, maximum degree of the truncated power functions, etc.) such as: **Grid Search CV**, **Vanilla CV**, and the **Nested CV** from the [Bates et al.](https://arxiv.org/pdf/2104.00673.pdf) article.
+We used **Repeated CV** to find the best degree and number of knots.
+
 
 Degree          |  Knots
 :-------------------------:|:-------------------------:
