@@ -37,7 +37,7 @@ Any _d-th_-order spline $f(\cdot)$ is a piecewise polynomial function of degree 
 
 Given a set of points $\xi_1 < \xi_2 < \cdots < \xi_q$, there is a quick-and-dirty way to describe/generate the whole set of _d-th_-order spline functions over those $q$ knots:
 
-* Start from **truncated power functions** $G_{d,q} = \{ g_1(x), \ldots, g_{d+1}(x), g_{(d+1)+1}(x), \ldots, g_{(d+1)+q}(x) \}$, defined as: $\{ g_1(x) = 1, g_2(x) = x, \ldots, g_{d+1}(x) = x^d \}$, $\{ g_{(d+1)+j}(x) = (x - \xi_j)_{+}^d \}$ for $j = 1$ to $q$, where $(x)_{+} = \max(0, x)$.
+* Start from **truncated power functions** $G_{d,q} = \{ g_1(x), \ldots, g_{d+1}(x), g_{(d+1)+1}(x), \ldots, g_{(d+1)+q}(x) \}$, defined as: $\{ g_1(x) = 1, g_2(x) = x, \ldots, g_{d+1}(x) = x^d \}$, $\{ g_{(d+1)+j}(x) = (x - \xi_j)_{+}^d \}$ for $j = 1$ to $q$, where $(x) _{+} = max(0, x)$.
 * Then, if $f(\cdot)$ is a _d-th_-order spline with knots $\{\xi_1, \ldots, \xi_q\}$, you can show it can be obtained as a linear combination over $G_{d,q}$:
 
     **$f(x) = \sum_{j=1}^{(d+1)+q} \beta_j g_j(x)$,** for some set of coefficients $\beta = [\beta_1, \ldots, \beta_{d+1}, \beta_{(d+1)+1}, \ldots, \beta_{(d+1)+q}]^T$
